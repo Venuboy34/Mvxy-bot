@@ -56,7 +56,7 @@ SUPPORT_CHAT = 'https://t.me/zerodev2'  # Support group link (make sure bot is a
 
 # FORCE_SUB 
 auth_req_channels = "-1002997352630"# requst to join Channel for force sub (make sure bot is admin) only for bot ADMINS  
-auth_channels     = "-1003662705513"# Channels for force sub (make sure bot is admin)
+auth_channels     = ["-1003662705513", "-1003318483881"]# Channels for force sub (make sure bot is admin)
 
 # ============================
 # Payment Configuration
@@ -150,7 +150,7 @@ INDEX_REQ_CHANNEL = LOG_CHANNEL  # Index Request Channel ID (make sure bot is ad
 NO_RESULTS_MSG = True  # True if you want no results messages in Log Channel
 MAX_BTN = True    # Max Button On (True) / Off (False)
 P_TTI_SHOW_OFF = False    # P_TTI_SHOW_OFF On (True) / Off (False)
-IMDB = False    # IMDB Results On (True) / Off (False)
+IMDB = True    # IMDB Results On (True) / Off (False)
 TMDB_ON_SEARCH = True    # Use TMDB Poster On Search Results
 AUTO_FFILTER = True # Auto Filter On (True) / Off (False)
 AUTO_DELETE = True # Auto Delete On (True) / Off (False)
