@@ -75,7 +75,7 @@ STAR_PREMIUM_PLANS = {
 # ============================
 # MongoDB Configuration
 # ============================
-DATABASE_URI = "mongodb+srv://Zerobothost:zerobothost@cluster0.bl0tf2.mongodb.net/?appName=Cluster0"  # MongoDB URI for the database
+DATABASE_URI = "mongodb+srv://zerodev699_db_user:zero8907@cluster0.1asqdb9.mongodb.net/?appName=Cluster0"  # MongoDB URI for the database
 DATABASE_NAME = "Cluster0" # Database name (default: cluster)
 COLLECTION_NAME = 'Filmzi_Files' # Collection name (default: dreamcinezone_files)
 
