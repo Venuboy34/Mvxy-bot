@@ -44,14 +44,14 @@ FSUB_PICS = ['https://i.ibb.co/pr2H8cwT/img-8312532076.jpg']  # Fsub pic
 # Admin, Channels & Users Configuration
 # ============================
 ADMINS = [8312532076] # Replace with the actual admin ID(s) to add
-CHANNELS = [-1002897456594]  # Channel id for auto indexing (make sure bot is admin)
+CHANNELS = [-1003679549742]  # Channel id for auto indexing (make sure bot is admin)
 
 LOG_CHANNEL = -1003382486179  # Log channel id (make sure bot is admin)
-BIN_CHANNEL = -1002897456594  # Bin channel id (make sure bot is admin)
-PREMIUM_LOGS = -1002897456594  # Premium logs channel id
+BIN_CHANNEL = -1003679549742  # Bin channel id (make sure bot is admin)
+PREMIUM_LOGS = -1003679549742  # Premium logs channel id
 DELETE_CHANNELS = [-1002897456594] #(make sure bot is admin)
-support_chat_id = -1002897456594  # Support group id (make sure bot is admin)
-reqst_channel = -1002897456594  # Request channel id (make sure bot is admin)
+support_chat_id = -1003501621896  # Support group id (make sure bot is admin)
+reqst_channel = -1003501621896  # Request channel id (make sure bot is admin)
 SUPPORT_CHAT = 'https://t.me/zerodev2'  # Support group link (make sure bot is admin)
 
 # FORCE_SUB 
@@ -98,8 +98,8 @@ LANDSCAPE_POSTER = True # Shows landscape poster in notification msg
 # Verification Settings
 # ============================
 IS_VERIFY = False  # Verification On (True) / Off (False)
-LOG_VR_CHANNEL = -1002897456594 #Verification Channel Id 
-LOG_API_CHANNEL = -1002897456594 #If Anyone Set Your Bot In Any Group And Set Shortner In That Group Then In This Channel The All Details Come
+LOG_VR_CHANNEL = -1003679549742 #Verification Channel Id 
+LOG_API_CHANNEL = -1003679549742 #If Anyone Set Your Bot In Any Group And Set Shortner In That Group Then In This Channel The All Details Come
 VERIFY_IMG = "https://graph.org/file/d7a2ec5a7343175789cbb-ce6b1d2e43103b5b20.jpg"
 
 TUTORIAL = "https://t.me/Zeroboy216"   # Tutorial link for verification
