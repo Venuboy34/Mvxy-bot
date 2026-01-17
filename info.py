@@ -32,7 +32,12 @@ INDEX_CAPTION = True # Save caption db when idexing make it False if you dont us
 COVERX = True # Use cover image for indexed files (default: True)
 # If you disable it then bot will use a default thumb for all files
 
-PICS_URL = ['https://api.aniwallpaper.workers.dev/random?type=girl'] #random anime girl img each time from aniwallpaper (Experimental)
+PICS_URL = [
+    'https://i.ibb.co/ksrvqFFw/img-8312532076.jpg',
+    'https://i.ibb.co/LhrhYmjz/img-8312532076.jpg',
+    'https://i.ibb.co/DDwXh1hJ/img-8312532076.jpg',
+    'https://i.ibb.co/HLsntHQm/img-8312532076.jpg'
+] #random anime girl img each time from aniwallpaper (Experimental)
 PICS = ['https://i.ibb.co/ksrvqFFw/img-8312532076.jpg', 'https://i.ibb.co/LhrhYmjz/img-8312532076.jpg', 'https://i.ibb.co/DDwXh1hJ/img-8312532076.jpg', 'https://i.ibb.co/HLsntHQm/img-8312532076.jpg']  # Sample pic
 NOR_IMG = "https://graph.org/file/e20b5fdaf217252964202.jpg"
 MELCOW_PHOTO = "https://graph.org/file/56b5deb73f3b132e2bb73.jpg"
@@ -208,7 +213,7 @@ BAD_WORDS = {
 NO_PORT = False
 APP_NAME = None
 ON_HEROKU = False
-BIND_ADRESS = '0.0.0.0'
+BIND_ADRESS = 'mvxy-bot.onrender.com'
 FQDN = BIND_ADRESS
 URL = "https://{}/".format(FQDN, PORT)
 SLEEP_THRESHOLD = 60
