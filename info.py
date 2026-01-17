@@ -55,8 +55,8 @@ reqst_channel = -1003501621896  # Request channel id (make sure bot is admin)
 SUPPORT_CHAT = 'https://t.me/zerodev2'  # Support group link (make sure bot is admin)
 
 # FORCE_SUB 
-auth_req_channels = "-1002997352630"# requst to join Channel for force sub (make sure bot is admin) only for bot ADMINS  
-auth_channels     = "-1003662705513 -1003318483881"# Channels for force sub (make sure bot is admin)
+auth_req_channels = -1002997352630  # requst to join Channel for force sub (make sure bot is admin) only for bot ADMINS  
+auth_channels     = -1003662705513 -1003318483881  # Channels for force sub (make sure bot is admin)
 
 # ============================
 # Payment Configuration
