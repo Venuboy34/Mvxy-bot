@@ -89,7 +89,7 @@ MOVIE_UPDATE_CHANNEL = -1003318483881  # Notification of sent to your channel
 DREAMXBOTZ_IMAGE_FETCH = True  # On (True) / Off (False)
 LINK_PREVIEW = False # Shows link preview in notification msg instead of image
 ABOVE_PREVIEW = True # Shows link preview above the text in notification msg if True else below the msg
-TMDB_API_KEY = '282fec93f7dac5a152e0b321327b46c4' # preffer to use your own tmdb API Key get it from https://www.themoviedb.org/settings/api
+TMDB_API_KEY = '52f6a75a38a397d940959b336801e1c3' # preffer to use your own tmdb API Key get it from https://www.themoviedb.org/settings/api
 TMDB_POSTER = True # Shows TMDB poster in notification msg
 LANDSCAPE_POSTER = True # Shows landscape poster in notification msg
 
