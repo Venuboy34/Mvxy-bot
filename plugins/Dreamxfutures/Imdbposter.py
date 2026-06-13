@@ -17,6 +17,9 @@ warnings.simplefilter("ignore", Image.DecompressionBombWarning)
 
 _session: aiohttp.ClientSession | None = None
 
+TMDB_BASE = "https://api.themoviedb.org/3"
+TMDB_IMG  = "https://image.tmdb.org/t/p/w1280"
+
 
 async def get_session():
     global _session
@@ -32,7 +35,6 @@ async def fetch_image(url, size=(860, 1200)):
 
     try:
         session = await get_session()
-
         async with session.get(url) as response:
             if response.status != 200:
                 logger.error(f"Failed to fetch image: {response.status} for {url}")
@@ -62,11 +64,16 @@ async def close_session():
     if _session and not _session.closed:
         await _session.close()
 
+
 def list_to_str(lst):
     if lst:
         return ", ".join(map(str, lst))
     return ""
 
+
+# ──────────────────────────────────────────────
+# IMDB via Cinemagoer  (unchanged)
+# ──────────────────────────────────────────────
 async def get_movie_details(query, id=False, file=None):
     try:
         if not id:
@@ -82,36 +89,33 @@ async def get_movie_details(query, id=False, file=None):
                     year = list_to_str(year[:1])
             else:
                 year = None
+
             movieid = ia.search_movie(title.lower(), results=10)
             if not movieid:
                 return None
+
             if year:
                 filtered = list(filter(lambda k: str(k.get('year')) == str(year), movieid))
                 if not filtered:
                     filtered = movieid
             else:
                 filtered = movieid
-            
+
             filtered_kind = list(filter(lambda k: k.get('kind') in ['movie', 'tv series'], filtered))
-            if not filtered_kind:
-                logger.info("No matches found for kind 'movie' or 'tv series', falling back to filtered list.")
-                movieid = filtered
-            else:
-                movieid = filtered_kind
-            
-            movieid = movieid[0].movieID
+            movieid = filtered_kind[0].movieID if filtered_kind else filtered[0].movieID
         else:
             movieid = query
+
         movie = ia.get_movie(movieid)
         ia.update(movie, info=['main', 'vote details'])
-        
+
         if movie.get("original air date"):
             date = movie["original air date"]
         elif movie.get("year"):
             date = movie.get("year")
         else:
             date = "N/A"
-            
+
         plot = movie.get('plot')
         if plot and len(plot) > 0:
             plot = plot[0]
@@ -119,8 +123,11 @@ async def get_movie_details(query, id=False, file=None):
             plot = movie.get('plot outline')
         if plot and len(plot) > 800:
             plot = plot[:800] + "..."
-            
+
         poster_url = movie.get('full-size cover url')
+        if poster_url and poster_url.endswith("@.jpg"):
+            poster_url = poster_url + "._V1_SX1440.jpg"
+
         return {
             'title': movie.get('title'),
             'votes': movie.get('votes'),
@@ -145,7 +152,7 @@ async def get_movie_details(query, id=False, file=None):
             'release_date': date,
             'year': movie.get('year'),
             'genres': list_to_str(movie.get("genres")),
-            'poster_url': poster_url + "._V1_SX1440.jpg" if poster_url.endswith("@.jpg") else poster_url,
+            'poster_url': poster_url,
             'plot': plot,
             'rating': str(movie.get("rating", "N/A")),
             'url': f'https://www.imdb.com/title/tt{movieid}'
@@ -154,67 +161,129 @@ async def get_movie_details(query, id=False, file=None):
         logger.exception(f"An error occurred in get_movie_details: {e}")
         return None
 
+
+# ──────────────────────────────────────────────
+# TMDB official API  (replaces broken 3rd-party)
+# ──────────────────────────────────────────────
 async def get_movie_detailsx(query, id=False, file=None):
-    base_url = "https://bharath-boy-api.vercel.app/api/movie-posters"
-    q = str(query).strip()
+    """
+    Fetch movie/series details from the official TMDB API.
+    Returns a dict with the same keys channel.py expects:
+      poster_url, backdrop_url, rating, genres, year,
+      tmdb_url, title, plot, runtime, votes, languages, countries,
+      director, cast, imdb_id, tmdb_id
+    Returns {} on any failure (never None, so .get() is always safe).
+    """
+    if not TMDB_API_KEY:
+        logger.warning("TMDB_API_KEY not set — skipping TMDB lookup")
+        return {}
+
     try:
-        async with aiohttp.ClientSession() as session:
-            params = {"query": q, "api_key": TMDB_API_KEY}
-            async with session.get(base_url, params=params) as resp:
+        session = await get_session()
+        params = {
+            "api_key": TMDB_API_KEY,
+            "query": str(query).strip(),
+            "include_adult": "false",
+        }
+
+        # ── 1. Search (try movie first, then tv) ──────────────────────
+        tmdb_id = media_type = None
+
+        for mtype in ("movie", "tv"):
+            url = f"{TMDB_BASE}/search/{mtype}"
+            async with session.get(url, params=params) as resp:
                 if resp.status != 200:
-                    text = await resp.text()
-                    logger.error(f"API request failed [{resp.status}] for query={q}\n {text}")
-                    return await resp.json()
-                
+                    logger.error(f"TMDB search/{mtype} failed: {resp.status}")
+                    continue
                 data = await resp.json()
+                results = data.get("results", [])
+                if results:
+                    tmdb_id = results[0]["id"]
+                    media_type = mtype
+                    break
+
+        if not tmdb_id:
+            logger.info(f"TMDB: no results for '{query}'")
+            return {}
+
+        # ── 2. Details + credits + images ─────────────────────────────
+        detail_params = {
+            "api_key": TMDB_API_KEY,
+            "append_to_response": "credits,images",
+            "include_image_language": "en,null",
+        }
+        detail_url = f"{TMDB_BASE}/{media_type}/{tmdb_id}"
+        async with session.get(detail_url, params=detail_params) as resp:
+            if resp.status != 200:
+                logger.error(f"TMDB detail fetch failed: {resp.status}")
+                return {}
+            d = await resp.json()
+
+        # ── 3. Normalise ───────────────────────────────────────────────
+        details = {}
+
+        details['title'] = d.get('title') or d.get('name')
+        details['year'] = (
+            int(d['release_date'][:4]) if d.get('release_date')
+            else int(d['first_air_date'][:4]) if d.get('first_air_date')
+            else None
+        )
+        details['release_date'] = d.get('release_date') or d.get('first_air_date')
+        details['rating'] = round(float(d.get('vote_average', 0)), 1) or None
+        details['votes'] = d.get('vote_count', 0)
+        details['runtime'] = (
+            d.get('runtime') or
+            (d.get('episode_run_time') or [None])[0]
+        )
+        details['plot'] = d.get('overview')
+        details['tagline'] = d.get('tagline')
+        details['tmdb_id'] = tmdb_id
+        details['imdb_id'] = d.get('imdb_id')
+        details['tmdb_url'] = (
+            f"https://www.themoviedb.org/movie/{tmdb_id}" if media_type == "movie"
+            else f"https://www.themoviedb.org/tv/{tmdb_id}"
+        )
+
+        # Genres
+        details['genres'] = [g['name'] for g in d.get('genres', [])]
+
+        # Languages / countries
+        details['languages'] = [
+            l.get('english_name', l.get('name', ''))
+            for l in d.get('spoken_languages', [])
+        ]
+        details['countries'] = [
+            c.get('name', '') for c in d.get('production_countries', [])
+        ]
+
+        # Credits
+        crew = d.get('credits', {}).get('crew', [])
+        cast = d.get('credits', {}).get('cast', [])
+        details['director'] = [p['name'] for p in crew if p.get('job') == 'Director']
+        details['writer']   = [p['name'] for p in crew if p.get('job') in ('Writer', 'Screenplay')]
+        details['producer'] = [p['name'] for p in crew if p.get('job') == 'Producer']
+        details['composer'] = [p['name'] for p in crew if p.get('department') == 'Sound']
+        details['cinematographer'] = [p['name'] for p in crew if p.get('job') == 'Director of Photography']
+        details['cast'] = [p['name'] for p in cast[:10]]
+
+        # Poster
+        poster_path = d.get('poster_path')
+        details['poster_url'] = f"{TMDB_IMG}{poster_path}" if poster_path else None
+
+        # Backdrop (landscape)
+        backdrop_path = d.get('backdrop_path')
+        # prefer an English-language backdrop from images if available
+        img_backdrops = d.get('images', {}).get('backdrops', [])
+        if img_backdrops:
+            # pick first English or language-neutral backdrop
+            for bd in img_backdrops:
+                if bd.get('iso_639_1') in ('en', None, ''):
+                    backdrop_path = bd.get('file_path', backdrop_path)
+                    break
+        details['backdrop_url'] = f"{TMDB_IMG}{backdrop_path}" if backdrop_path else None
+
+        return details
+
     except Exception as e:
-        logger.error(f"An error occurred in get_movie_detailsx: {e}")
-        return None
-
-    # Normalize fields
-    details = {}
-    details['title'] = data.get('title') or data.get('localized_title')
-    details['year'] = (data.get('year', 0)) if data.get('year') else None
-    details['release_date'] = data.get('release_date')
-    details['rating'] = round(float(data.get('rating', 0)), 1) if data.get('rating') is not None else None
-    details['votes'] = int(data.get('votes', 0))
-    details['runtime'] = data.get('runtime')
-    details['certificates'] = data.get('certificates')
-    details['tmdb_url'] = data.get('url')
-    
-    for key in ('genres', 'languages', 'countries'):
-        raw = data.get(key)
-        details[key] = [s.strip() for s in raw.split(',')] if raw else []
-    for role in ('director', 'writer', 'producer', 'composer', 'cinematographer', 'cast'):
-        raw = data.get(role)
-        details[role] = [s.strip() for s in raw.split(',')] if raw else []
-        
-    details['plot'] = data.get('plot')
-    details['tagline'] = data.get('tagline')
-    details['box_office'] = (data.get('box_office', 0)) if data.get('box_office') else None
-    raw_dist = data.get('distributors')
-    details['distributors'] = [d.strip() for d in raw_dist.split(',')] if raw_dist else []
-    details['imdb_id'] = data.get('imdb_id')
-    details['tmdb_id'] = data.get('tmdb_id')
-    
-    posters = data.get('images', {}).get('posters', {})
-    original_language = data.get('images', {}).get('original_language')
-    poster_url = data.get('poster_url')
-    if not poster_url:
-        for key in ('en', original_language, 'xx'):
-            if key and posters.get(key):
-                poster_url = posters[key][0]
-                break
-    details['poster_url'] = poster_url.replace("/original/", "/w1280/") if poster_url else None
-
-    backdrops = data.get('images', {}).get('backdrops', {})
-    original_language = data.get('images', {}).get('original_language')
-    backdrop_url = None
-    for key in ('en', original_language, 'xx' or 'no_lang'):
-        if key and backdrops.get(key):
-            backdrop_url = backdrops[key][0]
-            break
-    details['backdrop_url'] = backdrop_url.replace("/original/", "/w1280/") if backdrop_url else None
-
-    return details
-
+        logger.exception(f"An error occurred in get_movie_detailsx: {e}")
+        return {}
